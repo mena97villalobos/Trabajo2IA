@@ -18,26 +18,28 @@ def dataGenerator(parametros1, parametros2):
 
 
 def sigmoid(muestra, pesos):
-    aux = -torch.dot(muestra, pesos)
-    return 1 / (1 + torch.exp(aux))
+    return torch.sigmoid(torch.dot(muestra,pesos))
 
 
 def funcionError(predicciones, targets):
     aux0 = 1 - targets
     aux1 = torch.sum(aux0 * torch.log(1 - predicciones))
     aux2 = torch.sum(targets * torch.log(predicciones))
-    return  aux1 + aux2
+    return  -1*(aux1 + aux2)
 
 
 def gradientOpt(pesos, muestras, target, threshold, alpha):
     # Construyendo vector de predicciones para la iteración
-    predicciones = torch.Tensor([sigmoid(muestra, pesos) for muestra in muestras]).reshape((muestras.shape[0], 1))
-    while threshold > funcionError(predicciones, target):
+    predicciones = torch.Tensor([sigmoid(muestra, pesos) for muestra in muestras]).reshape((muestras.shape[0]))
+    error = funcionError(predicciones, target)
+    while threshold < error:
         aux = target - predicciones
-        aux = torch.mul(muestras, aux)
-        aux = torch.sum(aux, 0)
+        aux = torch.mul(muestras,aux.reshape(aux.shape[0],1))
+        aux = torch.sum(aux) #FIXME ANTES ESTABA CON sum(aux,0) creo que se deberia quedar asi como esta.
         pesos = pesos + alpha * aux
         predicciones = torch.Tensor([sigmoid(muestra, pesos) for muestra in muestras]).reshape((muestras.shape[0], 1))
+
+        error = funcionError(predicciones, target)
         print(pesos)
 
 
@@ -50,8 +52,11 @@ if __name__ == "__main__":
     # Construyendo vector de muestras
     M = torch.cat((X, Y), 0)
     # Construyendo vector de targets
-    t = torch.cat((torch.ones(X.shape), torch.zeros(Y.shape)), 0)
+    t = torch.cat((torch.ones(X.shape[0]), -1 * torch.ones(Y.shape[0])), 0) #t = torch.cat((torch.ones(X.shape), torch.zeros(Y.shape)), 0)
     # Construyendo vector de pesos
-    w = torch.zeros((1, 2))[0]
+    w = torch.zeros((1, 2))[0] #torch.ones(1,2)[0]#torch.rand(1,2)[0]
 
     gradientOpt(w, M, t, 0.01, 0.4)
+
+
+
