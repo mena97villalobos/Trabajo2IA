@@ -93,8 +93,8 @@ class RegresionLogistica:
 
 if __name__ == "__main__":
     # Configuración de los parámetros para conseguir datos
-    p1 = {'mean': torch.Tensor([1, 1]), 'cov': torch.Tensor([[0.1, 0], [0, 0.1]]), 'sampleSize': 200}
-    p2 = {'mean': torch.Tensor([1, 1]), 'cov': torch.Tensor([[1000, 0], [0, 1000]]), 'sampleSize': 200}
+    p1 = {'mean': torch.Tensor([0.5, 0.5]), 'cov': torch.Tensor([[1, 0], [0, 1]]), 'sampleSize': 400}
+    p2 = {'mean': torch.Tensor([0.5, 0.5]), 'cov': torch.Tensor([[0.1, 0], [0, 0.1]]), 'sampleSize': 400}
     data = dataGenerator(p1, p2)
     # Datos de Entrenamiento
     entrenamientoClase1, pruebasClase1 = obtenerMuestras(data[0])
