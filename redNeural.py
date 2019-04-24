@@ -3,7 +3,6 @@ import torch
 
 class RedNeural:
 
-
     def __init__(self, neuronasPorCapa, alpha, maxPesosRand):
         self.D = neuronasPorCapa[0]
         self.M = neuronasPorCapa[1]
@@ -14,8 +13,8 @@ class RedNeural:
         self.maxPesosRand = maxPesosRand
         # Inicializando los pesos de manera aleatoria
         # Valor adicional del bias
-        self.pesos_oe : torch.Tensor = torch.rand(self.M, self.D + 1)
-        self.pesos_so : torch.Tensor = torch.rand(self.K, self.M  + 1)
+        self.pesos_oe : torch.Tensor = torch.rand(self.M, self.D)
+        self.pesos_so : torch.Tensor = torch.rand(self.K, self.M )
         self.salidaFinal = None
         self.salidaOculta = None
         self.entrada = None
@@ -29,26 +28,33 @@ class RedNeural:
 
     def calcularPasadaAdelante(self, entrada):
         # Añadiendo elemento para que se conserve el bias
-        entrada += [[1]]
+       # entrada += [[1]]
+        #entrada+=[1]
         entrada = torch.Tensor(entrada)
         self.entrada = entrada
-        salidaOculta = torch.mm(self.pesos_oe, entrada)
+        salidaOculta = torch.mm(self.pesos_oe,entrada.reshape(entrada.shape[0],1)) +1
+        #salidaOculta = torch.mm(self.pesos_oe, entrada)
+        salidaOculta = salidaOculta.reshape(salidaOculta.shape[0])
         salidaOculta : torch.Tensor = torch.sigmoid(salidaOculta)
         # Añadiendo elemento para que se conserve el bias
-        salidaOculta = torch.cat((salidaOculta, torch.Tensor([[1]])), 0)
+        #salidaOculta = torch.cat((salidaOculta, torch.Tensor([1])), 0)
         self.salidaOculta = salidaOculta
-        salidaFinal = torch.mm(self.pesos_so, salidaOculta)
-        self.salidaFinal = torch.sigmoid(salidaFinal)
+        salidaFinal = torch.mm(self.pesos_so, salidaOculta.reshape(salidaOculta.shape[0],1)) + 1 #AQUI SA EL VIAS
+        salidaFinal = salidaFinal.reshape(salidaFinal.shape[0])
+        self.salidaFinal = torch.sigmoid(salidaFinal.reshape(salidaFinal.shape[0]))
         return self.salidaFinal
 
 
     def calcularPasadaAtras(self):
 
         self.delta_salida = (self.salidaFinal - self.etiqueta) * (self.salidaFinal * (1 - self.salidaFinal))
-        self.delta_salida = self.delta_salida.reshape(self.delta_salida.shape[1],self.delta_salida.shape[0])
 
-        self.delta_oculta = (torch.mm(self.delta_salida, self.pesos_so)) * (self.salidaOculta * (1 - self.salidaOculta))
-        self.delta_oculta = self.delta_oculta.reshape(self.delta_oculta.shape[1],self.delta_oculta.shape[0])
+        deltaSalidaAux = self.delta_salida.reshape(1,self.delta_salida.shape[0])
+
+        self.delta_oculta = torch.sum(torch.mm(deltaSalidaAux, self.pesos_so),1) * (self.salidaOculta * (1 - self.salidaOculta))
+
+        self.delta_salida = self.delta_salida.reshape(self.delta_salida.shape[0], 1)
+        self.delta_oculta = self.delta_oculta.reshape(self.delta_oculta.shape[0],1)
 
 
         # entrada += [[1]]
@@ -71,7 +77,8 @@ class RedNeural:
     def entrenarRed(self, numIteraciones, X, T):
         for epoch in range(numIteraciones):
             for data in range(len(X)):
-                self.etiqueta = torch.Tensor([T[data].copy()])
+                #self.etiqueta = torch.Tensor([T[data].copy()])
+                self.etiqueta = torch.Tensor([T[data]])
                 self.calcularPasadaAdelante(X[data].copy())
                 self.calcularPasadaAtras()
                 self.actualizarPesosSegunDeltas()
@@ -88,7 +95,7 @@ class RedNeural:
     def actualizarPesosSegunDeltas(self):
 
         #Actualizacion de pesos de Capa Oculta a Capa de Salida
-        aux1 = self.learningRate *( self.delta_salida * self.salidaOculta )
+        aux1 = self.learningRate *( self.delta_salida * self.salidaOculta)
         self.pesos_so -= aux1
 
         # Actualizacion de pesos de Capa de Entrada a Capa de Oculta
@@ -98,9 +105,9 @@ class RedNeural:
 
 
 if __name__ == "__main__":
-    red = RedNeural([2, 2, 1], 0.4, 100)
-    i = [[[1], [0]], [[0], [0]], [[0], [1]], [[1], [1]]]
-    t = [[1], [0], [1], [0]]
+    red = RedNeural([2, 2, 2], 0.4, 100)
+    i = [[1, 0], [0, 0], [0, 1], [1,1]]
+    t = [1, 0, 1, 0]
     # El copy se usa para pasarlo por valor y no referencia y que no se modifique el i
     red.entrenarRed(15, i, t)
     red.evaluarMuesta([[1], [0]])
