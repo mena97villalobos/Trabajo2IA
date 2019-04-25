@@ -105,11 +105,11 @@ class RedNeural:
 
 
 if __name__ == "__main__":
-    red = RedNeural([2, 2, 2], 0.4, 100)
-    i = [[1, 0], [0, 0], [0, 1], [1,1]]
-    t = [1, 0, 1, 0]
+    red = RedNeural([2, 2, 1], 0.4, 100)
+    i = [[0,0], [1, 0], [0, 1], [1,1]]
+    t = [0,1,1,0]
     # El copy se usa para pasarlo por valor y no referencia y que no se modifique el i
-    red.entrenarRed(15, i, t)
-    red.evaluarMuesta([[1], [0]])
+    red.entrenarRed(10000, i, t)
+    red.evaluarMuesta([1, 1])
     salida = red.salidaFinal
     print("Salida de la pasada hacia adelante: {}".format(salida))
