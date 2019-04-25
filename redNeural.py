@@ -13,8 +13,10 @@ class RedNeural:
         self.maxPesosRand = maxPesosRand
         # Inicializando los pesos de manera aleatoria
         # Valor adicional del bias
-        self.pesos_oe : torch.Tensor = torch.rand(self.M, self.D)
-        self.pesos_so : torch.Tensor = torch.rand(self.K, self.M )
+        #self.pesos_oe : torch.Tensor = torch.rand(self.M, self.D)
+        self.pesos_oe = torch.Tensor([[3,2],[2,1]])
+        #self.pesos_so : torch.Tensor = torch.rand(self.K, self.M )
+        self.pesos_so = torch.Tensor([[4,3]])
         self.salidaFinal = None
         self.salidaOculta = None
         self.entrada = None
@@ -32,14 +34,14 @@ class RedNeural:
         #entrada+=[1]
         entrada = torch.Tensor(entrada)
         self.entrada = entrada
-        salidaOculta = torch.mm(self.pesos_oe,entrada.reshape(entrada.shape[0],1)) +1
+        salidaOculta = torch.mm(self.pesos_oe,entrada.reshape(entrada.shape[0],1)) #+1
         #salidaOculta = torch.mm(self.pesos_oe, entrada)
         salidaOculta = salidaOculta.reshape(salidaOculta.shape[0])
         salidaOculta : torch.Tensor = torch.sigmoid(salidaOculta)
         # Añadiendo elemento para que se conserve el bias
         #salidaOculta = torch.cat((salidaOculta, torch.Tensor([1])), 0)
         self.salidaOculta = salidaOculta
-        salidaFinal = torch.mm(self.pesos_so, salidaOculta.reshape(salidaOculta.shape[0],1)) + 1 #AQUI SA EL VIAS
+        salidaFinal = torch.mm(self.pesos_so, salidaOculta.reshape(salidaOculta.shape[0],1)) #+ 1 #AQUI SA EL BIAS
         salidaFinal = salidaFinal.reshape(salidaFinal.shape[0])
         self.salidaFinal = torch.sigmoid(salidaFinal.reshape(salidaFinal.shape[0]))
         return self.salidaFinal
@@ -106,10 +108,10 @@ class RedNeural:
 
 if __name__ == "__main__":
     red = RedNeural([2, 2, 1], 0.4, 100)
-    i = [[0,0], [1, 0], [0, 1], [1,1]]
+    i = [[1,1], [1, 0], [0, 1], [0,0]]
     t = [0,1,1,0]
     # El copy se usa para pasarlo por valor y no referencia y que no se modifique el i
-    red.entrenarRed(10000, i, t)
+    red.entrenarRed(1, i, t)
     red.evaluarMuesta([1, 1])
     salida = red.salidaFinal
     print("Salida de la pasada hacia adelante: {}".format(salida))
