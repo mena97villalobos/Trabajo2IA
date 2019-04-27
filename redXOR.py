@@ -27,7 +27,6 @@ class RedNeural:
         self.errorXIteracion = [[],[]]
 
 
-
     def dSigmoid(self, x : torch.Tensor):
         return x * (1 - x)
 
@@ -41,7 +40,6 @@ class RedNeural:
         salidaOculta = torch.mm(self.pesos_oe,entrada.reshape(entrada.shape[0],1)) #+1
 
         salidaOculta += self.bias_entrada
-
 
         #salidaOculta = torch.mm(self.pesos_oe, entrada)
         salidaOculta = salidaOculta.reshape(salidaOculta.shape[0])
@@ -70,11 +68,9 @@ class RedNeural:
         self.delta_salida = self.delta_salida.reshape(self.delta_salida.shape[0], 1)
         self.delta_oculta = self.delta_oculta.reshape(self.delta_oculta.shape[0],1)
 
-
     def evaluarClasificacionesErroneas(self, X, T):
 
         return 0.5 * ((X - T) ** 2)
-
 
     def entrenarRed(self, numIteraciones, X, T):
 
@@ -97,8 +93,6 @@ class RedNeural:
     def evaluarMuesta(self, x):
         self.calcularPasadaAdelante(x)
         return self.salidaFinal
-
-
 
     def actualizarPesosSegunDeltas(self):
 
