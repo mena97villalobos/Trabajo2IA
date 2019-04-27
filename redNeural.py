@@ -16,18 +16,18 @@ class RedNeural:
         self.maxPesosRand = maxPesosRand
         # Inicializando los pesos de manera aleatoria
         # Valor adicional del bias
-        self.pesos_oe : torch.Tensor = torch.rand(self.M, self.D)
-        #self.pesos_oe = torch.Tensor([[-4.3561,  4.3269],[-0.8986,  0.2353],        [-1.7860,  1.5103],        [-3.7588,  3.8514],        [ 5.1884, -5.4514],        [-0.0425, -0.5171],        [ 3.5132, -3.3224],        [-1.7697,  1.4660],        [ 5.4206, -5.7103],        [ 4.4498, -4.5519],        [-4.8896,  4.7710],        [-4.8967,  4.7743],        [-4.9030,  4.7749],        [-1.1180,  0.4828],        [-5.1811,  5.0248]])
-        self.pesos_so : torch.Tensor = torch.rand(self.K, self.M)
-        #self.pesos_so = torch.Tensor([[ 0.8236, -0.7595, -0.5422,  0.6657,  2.9399, -0.3755,  0.2504, -0.2873,4.4854,  1.4221,  1.7347,  2.1508,  2.0846, -0.3335,  2.7299]])
+        #self.pesos_oe : torch.Tensor = torch.rand(self.M, self.D)
+        self.pesos_oe = torch.Tensor([[-2.0669,  1.1724], [-5.3924,  4.4594], [ 4.5612, -5.5052], [-5.3783,  4.4875], [-5.3159,  4.4148], [-5.2931,  4.4065], [ 5.9003,  5.2954], [-5.8603,  4.8858], [-0.7211, -0.5424], [-2.1043,  1.2004], [ 3.8150, -4.5788], [ 5.1162, -6.1825], [ 5.1113, -6.1521], [-5.1674,  4.3163], [-5.4477,  4.5300]])
+        #self.pesos_so : torch.Tensor = torch.rand(self.K, self.M)
+        self.pesos_so = torch.Tensor([[-0.0726,  1.2745,  1.5667,  1.9381,  1.2215,  1.0115,  0.9610,  2.9072,-0.4534,  0.1668,  0.6210,  3.8220,  3.3079,  0.7912,  1.0864]])
         self.salidaFinal = None
         self.salidaOculta = None
         self.entrada = None
         self.etiqueta = None
-        self.bias_oculto : torch.Tensor = torch.rand(self.K,1)
-        #self.bias_oculto = torch.Tensor([[-4.3157]])
-        self.bias_entrada : torch.Tensor = torch.rand(self.M,1)
-        #self.bias_entrada = torch.Tensor([[-3.0266],[-3.9380],[-3.5800],[-2.9217],[-3.0197],[-3.8357],        [-2.5004],        [-3.5859],        [-3.1173],        [-2.7470],        [-3.1659],        [-3.1658],        [-3.1640],        [-3.8913],        [-3.2581]])
+        #self.bias_oculto : torch.Tensor = torch.rand(self.K,1)
+        self.bias_oculto = torch.Tensor([[-5.2498]])
+        #self.bias_entrada : torch.Tensor = torch.rand(self.M,1)
+        self.bias_entrada = torch.Tensor([[-3.2510], [-2.7887], [-2.5243], [-2.8151], [-2.7814], [-2.7831], [-2.4752], [-2.9565], [-3.6106], [-3.1965], [-2.2614], [-2.7420], [-2.7473], [-2.7593], [-2.8234]])
         self.errorXIteracion = [[],[]]
 
 
@@ -131,8 +131,8 @@ if __name__ == "__main__":
     i = [[1,1], [1, 0], [0, 1], [0,0]]
     t = [0,1,1,0]
     # El copy se usa para pasarlo por valor y no referencia y que no se modifique el i
-    red.entrenarRed(2000, i, t)
-    red.evaluarMuesta([1,1])
+    #red.entrenarRed(2000, i, t)
+    red.evaluarMuesta([0,1])
     salida = red.salidaFinal
     print("Salida de la pasada hacia adelante: {}".format(salida))
     # print("pesos_oe ",red.pesos_oe)
