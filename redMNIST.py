@@ -1,8 +1,31 @@
 import torch
 import matplotlib.pyplot as plt
-from matplotlib.collections import EventCollection
 import numpy as np
+from mlxtend.data import loadlocal_mnist
+import _pickle as cPickle
+import gzip
 
+def load_data():
+    # f = gzip.open('data/mnist/mnist.pkl.gz', 'rb')
+    # training_data, validation_data, test_data = cPickle.load(f)
+    # f.close()
+    # return (training_data, validation_data, test_data)
+    X, y = loadlocal_mnist(images_path ='data/mnist/train-images.idx3-ubyte',labels_path='data/mnist/train-labels.idx1-ubyte')
+    return (X, y)
+def load_data_wrapper():
+    tr_d, va_d, te_d = load_data()
+    training_inputs = [np.reshape(x, (784, 1)) for x in tr_d[0]]
+    training_results = [vectorized_result(y) for y in tr_d[1]]
+    training_data = zip(training_inputs, training_results)
+    validation_inputs = [np.reshape(x, (784, 1)) for x in va_d[0]]
+    validation_data = zip(validation_inputs, va_d[1])
+    test_inputs = [np.reshape(x, (784, 1)) for x in te_d[0]]
+    test_data = zip(test_inputs, te_d[1])
+    return (training_data, validation_data, test_data)
+def vectorized_result(j):
+    e = np.zeros((10, 1))
+    e[j] = 1.0
+    return e
 
 class RedNeural:
 
@@ -25,6 +48,7 @@ class RedNeural:
         self.bias_oculto : torch.Tensor = torch.rand(self.K,1)
         self.bias_entrada : torch.Tensor = torch.rand(self.M,1)
         self.errorXIteracion = [[],[]]
+
 
 
     def dSigmoid(self, x : torch.Tensor):
@@ -117,26 +141,30 @@ class RedNeural:
 
 
 if __name__ == "__main__":
-    red = RedNeural([2, 15, 1], 0.5, 100)
-    #i = [[1,1], [1, 0], [0, 1], [0,0]]
-    #t = [[0,1,0,0,0,0,0,0,0,0],[1],[1],[0]]
-    # El copy se usa para pasarlo por valor y no referencia y que no se modifique el i
-    red.entrenarRed(2000, i, t)
+    i, t = loadlocal_mnist(images_path ='data/mnist/train-images.idx3-ubyte',labels_path='data/mnist/train-labels.idx1-ubyte')
+    t = [vectorized_result(number) for number in t]
+    red = RedNeural([784, 397, 10], 0.5, 100)
+    red.entrenarRed(1000, i, t)
 
-    red.evaluarMuesta([1,1])
+
+    red.evaluarMuesta(i[0])
     salida = red.salidaFinal
     print("Salida de la pasada hacia adelante: {}".format(salida))
+    print("Esperado: ",t[0],'\n' )
 
-    red.evaluarMuesta([1,0])
+    red.evaluarMuesta(i[1])
     salida = red.salidaFinal
     print("Salida de la pasada hacia adelante: {}".format(salida))
+    print("Esperado: ",t[1],'\n' )
 
-    red.evaluarMuesta([0, 1])
+    red.evaluarMuesta(i[2])
     salida = red.salidaFinal
     print("Salida de la pasada hacia adelante: {}".format(salida))
+    print("Esperado: ",t[2],'\n' )
 
-    red.evaluarMuesta([0, 0])
+    red.evaluarMuesta(i[3])
     salida = red.salidaFinal
     print("Salida de la pasada hacia adelante: {}".format(salida))
+    print("Esperado: ",t[3],'\n' )
 
     red.graficarError()
