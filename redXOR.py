@@ -14,8 +14,6 @@ class RedNeural:
         self.delta_salida = torch.zeros(self.K)
         self.learningRate = alpha
         self.maxPesosRand = maxPesosRand
-        # Inicializando los pesos de manera aleatoria
-        # Valor adicional del bias
         self.pesos_oe : torch.Tensor = torch.rand(self.M, self.D)
         self.pesos_so : torch.Tensor = torch.rand(self.K, self.M)
         self.salidaFinal = None
@@ -26,26 +24,21 @@ class RedNeural:
         self.bias_entrada : torch.Tensor = torch.rand(self.M,1)
         self.errorXIteracion = [[],[]]
 
-
     def dSigmoid(self, x : torch.Tensor):
         return x * (1 - x)
 
 
     def calcularPasadaAdelante(self, entrada):
-        # Añadiendo elemento para que se conserve el bias
-       # entrada += [[1]]
-        #entrada+=[1]
+
         entrada = torch.Tensor(entrada)
         self.entrada = entrada
         salidaOculta = torch.mm(self.pesos_oe,entrada.reshape(entrada.shape[0],1)) #+1
 
         salidaOculta += self.bias_entrada
 
-        #salidaOculta = torch.mm(self.pesos_oe, entrada)
         salidaOculta = salidaOculta.reshape(salidaOculta.shape[0])
         salidaOculta : torch.Tensor = torch.sigmoid(salidaOculta)
-        # Añadiendo elemento para que se conserve el bias
-        #salidaOculta = torch.cat((salidaOculta, torch.Tensor([1])), 0)
+
         self.salidaOculta = salidaOculta
         salidaFinal = torch.mm(self.pesos_so, salidaOculta.reshape(salidaOculta.shape[0],1)) #+ 1 #AQUI SA EL BIAS
 
@@ -77,7 +70,6 @@ class RedNeural:
         for epoch in range(numIteraciones):
             sumaError = 0
             for data in range(len(X)):
-                #self.etiqueta = torch.Tensor([T[data].copy()])
                 self.etiqueta = torch.Tensor(T[data])
                 self.calcularPasadaAdelante(X[data].copy())
                 sumaError += self.evaluarClasificacionesErroneas(self.salidaFinal, self.etiqueta)
@@ -85,10 +77,6 @@ class RedNeural:
                 self.actualizarPesosSegunDeltas()
             self.errorXIteracion[0].append(epoch)
             self.errorXIteracion[1].append(sumaError)
-
-
-            #print("Epoch {} \n Pesos Entrada a Oculta {} \n Pesos Oculta a Salida {}".format(epoch, self.pesos_oe, self.pesos_so))
-
 
     def evaluarMuesta(self, x):
         self.calcularPasadaAdelante(x)
@@ -112,16 +100,17 @@ class RedNeural:
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.plot(self.errorXIteracion[0], self.errorXIteracion[1], 'r')
-        ax.set_title('Gráfica del error por iteración')
+        ax.set_title('Gráfica del Error por Iteración')
         plt.show()
 
 
+
 if __name__ == "__main__":
-    red = RedNeural([2, 15, 1], 0.5, 100)
-    i = [[1,1], [1, 0], [0, 1], [0,0]]  #[[2,2,54,543,],[],[],[],[],[]]
+    red = RedNeural([2, 5, 1], 0.6, 100)
+    i = [[1,1], [1, 0], [0, 1], [0,0]]
     t = [[0],[1],[1],[0]]
-    # El copy se usa para pasarlo por valor y no referencia y que no se modifique el i
-    red.entrenarRed(2000, i, t)
+
+    red.entrenarRed(50000,i, t)
 
     red.evaluarMuesta([1,1])
     salida = red.salidaFinal

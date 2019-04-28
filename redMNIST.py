@@ -1,170 +1,101 @@
-import torch
 import matplotlib.pyplot as plt
-import numpy as np
-from mlxtend.data import loadlocal_mnist
-import _pickle as cPickle
-import gzip
-
-def load_data():
-    # f = gzip.open('data/mnist/mnist.pkl.gz', 'rb')
-    # training_data, validation_data, test_data = cPickle.load(f)
-    # f.close()
-    # return (training_data, validation_data, test_data)
-    X, y = loadlocal_mnist(images_path ='data/mnist/train-images.idx3-ubyte',labels_path='data/mnist/train-labels.idx1-ubyte')
-    return (X, y)
-def load_data_wrapper():
-    tr_d, va_d, te_d = load_data()
-    training_inputs = [np.reshape(x, (784, 1)) for x in tr_d[0]]
-    training_results = [vectorized_result(y) for y in tr_d[1]]
-    training_data = zip(training_inputs, training_results)
-    validation_inputs = [np.reshape(x, (784, 1)) for x in va_d[0]]
-    validation_data = zip(validation_inputs, va_d[1])
-    test_inputs = [np.reshape(x, (784, 1)) for x in te_d[0]]
-    test_data = zip(test_inputs, te_d[1])
-    return (training_data, validation_data, test_data)
-def vectorized_result(j):
-    e = np.zeros((10, 1))
-    e[j] = 1.0
-    return e
-
-class RedNeural:
-
-    def __init__(self, neuronasPorCapa, alpha, maxPesosRand):
-        self.D = neuronasPorCapa[0]
-        self.M = neuronasPorCapa[1]
-        self.K = neuronasPorCapa[2]
-        self.delta_oculta = torch.zeros(self.M)
-        self.delta_salida = torch.zeros(self.K)
-        self.learningRate = alpha
-        self.maxPesosRand = maxPesosRand
-        # Inicializando los pesos de manera aleatoria
-        # Valor adicional del bias
-        self.pesos_oe : torch.Tensor = torch.rand(self.M, self.D)
-        self.pesos_so : torch.Tensor = torch.rand(self.K, self.M)
-        self.salidaFinal = None
-        self.salidaOculta = None
-        self.entrada = None
-        self.etiqueta = None
-        self.bias_oculto : torch.Tensor = torch.rand(self.K,1)
-        self.bias_entrada : torch.Tensor = torch.rand(self.M,1)
-        self.errorXIteracion = [[],[]]
+import numpy
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
 
 
+class RedNeuralMNIST(nn.Module):
 
-    def dSigmoid(self, x : torch.Tensor):
-        return x * (1 - x)
-
-
-    def calcularPasadaAdelante(self, entrada):
-        # Añadiendo elemento para que se conserve el bias
-       # entrada += [[1]]
-        #entrada+=[1]
-        entrada = torch.Tensor(entrada)
-        self.entrada = entrada
-        salidaOculta = torch.mm(self.pesos_oe,entrada.reshape(entrada.shape[0],1)) #+1
-
-        salidaOculta += self.bias_entrada
-
-        #salidaOculta = torch.mm(self.pesos_oe, entrada)
-        salidaOculta = salidaOculta.reshape(salidaOculta.shape[0])
-        salidaOculta : torch.Tensor = torch.sigmoid(salidaOculta)
-        # Añadiendo elemento para que se conserve el bias
-        #salidaOculta = torch.cat((salidaOculta, torch.Tensor([1])), 0)
-        self.salidaOculta = salidaOculta
-        salidaFinal = torch.mm(self.pesos_so, salidaOculta.reshape(salidaOculta.shape[0],1)) #+ 1 #AQUI SA EL BIAS
-
-        salidaFinal += self.bias_oculto
+    def _init_(self, neuronasPorCapas, alpha):
+        super()._init_()
+        self.D = neuronasPorCapas[0]
+        self.M = neuronasPorCapas[1]
+        self.K = neuronasPorCapas[2]
+        self.alpha = alpha
+        self.linear_ih = nn.Linear(self.D, self.M, bias=False)
+        self.linear_ho = nn.Linear(self.M, self.K, bias=False)
+        self.activacion = nn.Sigmoid()
+        self.error_function = torch.nn.MSELoss(size_average=False)
+        self.optimiser = torch.optim.SGD(self.parameters(), self.alpha)
+        self.perdida = torch.Tensor([0.0])
 
 
-        salidaFinal = salidaFinal.reshape(salidaFinal.shape[0])
-        self.salidaFinal = torch.sigmoid(salidaFinal.reshape(salidaFinal.shape[0]))
-        return self.salidaFinal
+    def forward(self, inputs_list):
+        caracteristicas_entrada = Variable(torch.cuda.FloatTensor(inputs_list).view(1, self.D))
+        # Combianación lineal de las entradas con los pesos respectivos
+        entrada_oculta = self.linear_ih(caracteristicas_entrada)
+        salida_oculta = self.activacion(entrada_oculta)
+        # Combianación lineal de la capa oculta con los pesos respectivos
+        entrada_capa_salida = self.linear_ho(salida_oculta)
+        salida_final = self.activacion(entrada_capa_salida)
+        return salida_final
 
 
-    def calcularPasadaAtras(self):
+    def entrenar(self, inputs_list, targets_list):
+        # Calcular la salida actual de la red
+        salida_pasada_adelante = self.forward(inputs_list)
+        target_variable = Variable(torch.cuda.FloatTensor(targets_list).view(1, self.K), requires_grad=False)
+        # Calculando error
+        loss = self.error_function(salida_pasada_adelante, target_variable)
+        self.perdida += loss
+        # print("Error en la iteración: {}".format(loss))
+        self.optimiser.zero_grad()
+        loss.backward()
+        self.optimiser.step()
 
-        self.delta_salida = (self.salidaFinal - self.etiqueta) * (self.salidaFinal * (1 - self.salidaFinal))
-
-        deltaSalidaAux = self.delta_salida.reshape(1,self.delta_salida.shape[0])
-
-        self.delta_oculta = torch.sum(torch.mm(deltaSalidaAux, self.pesos_so),1) * (self.salidaOculta * (1 - self.salidaOculta))
-
-        self.delta_salida = self.delta_salida.reshape(self.delta_salida.shape[0], 1)
-        self.delta_oculta = self.delta_oculta.reshape(self.delta_oculta.shape[0],1)
-
-    def evaluarClasificacionesErroneas(self, X, T):
-
-        return 0.5 * ((X - T) ** 2)
-
-    def entrenarRed(self, numIteraciones, X, T):
-
-        for epoch in range(numIteraciones):
-            sumaError = 0
-            for data in range(len(X)):
-                #self.etiqueta = torch.Tensor([T[data].copy()])
-                self.etiqueta = torch.Tensor(T[data])
-                self.calcularPasadaAdelante(X[data].copy())
-                sumaError += self.evaluarClasificacionesErroneas(self.salidaFinal, self.etiqueta)
-                self.calcularPasadaAtras()
-                self.actualizarPesosSegunDeltas()
-            self.errorXIteracion[0].append(epoch)
-            self.errorXIteracion[1].append(sumaError)
-
-
-            #print("Epoch {} \n Pesos Entrada a Oculta {} \n Pesos Oculta a Salida {}".format(epoch, self.pesos_oe, self.pesos_so))
-
-
-    def evaluarMuesta(self, x):
-        self.calcularPasadaAdelante(x)
-        return self.salidaFinal
-
-    def actualizarPesosSegunDeltas(self):
-
-        #Actualizacion de pesos de Capa Oculta a Capa de Salida
-        aux1 = self.learningRate *( self.delta_salida * self.salidaOculta)
-        self.pesos_so -= aux1
-
-        self.bias_oculto -= self.learningRate * self.delta_salida
-
-        # Actualizacion de pesos de Capa de Entrada a Capa de Oculta
-        aux2 = (self.learningRate *( self.delta_oculta * self.entrada))
-        self.pesos_oe -= aux2
-
-        self.bias_entrada -= self.learningRate * self.delta_oculta
-
-    def graficarError(self):
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        ax.plot(self.errorXIteracion[0], self.errorXIteracion[1], 'r')
-        ax.set_title('Gráfica del error por iteración')
-        plt.show()
+    def calcular_accuracy(self):
+        # TODO
+        test_data_file = open("mnist_test.csv", 'r')
+        test_data_list = test_data_file.readlines()
+        test_data_file.close()
+        self.perdida = torch.Tensor([0.0])
+        size = 0
+        for data in test_data_list[:500]:
+            values = data.split(',')
+            inputData = (numpy.asfarray(values[1:]) / 255.0 * 0.99) + 0.01
+            # Creando valores de targets para los 10 nodos de salida, todos en 0.01 menos el deseado
+            target = numpy.zeros(10) + 0.01
+            # Actualizando el target deseado
+            target[int(all_values[0])] = 0.99
+            salida_pasada_adelante = self.forward(inputData)
+            target_variable = Variable(torch.cuda.FloatTensor(target).view(1, self.K), requires_grad=False)
+            loss = self.error_function(salida_pasada_adelante, target_variable)
+            self.perdida += loss
+            size += 1
+        # Promedio de los errores creo que debería ser comparar targets bien evaluados vs mal evaluados
+        return self.perdida / size
 
 
-if __name__ == "__main__":
-    i, t = loadlocal_mnist(images_path ='data/mnist/train-images.idx3-ubyte',labels_path='data/mnist/train-labels.idx1-ubyte')
-    t = [vectorized_result(number) for number in t]
-    red = RedNeural([784, 397, 10], 0.5, 100)
-    red.entrenarRed(1000, i, t)
-
-
-    red.evaluarMuesta(i[0])
-    salida = red.salidaFinal
-    print("Salida de la pasada hacia adelante: {}".format(salida))
-    print("Esperado: ",t[0],'\n' )
-
-    red.evaluarMuesta(i[1])
-    salida = red.salidaFinal
-    print("Salida de la pasada hacia adelante: {}".format(salida))
-    print("Esperado: ",t[1],'\n' )
-
-    red.evaluarMuesta(i[2])
-    salida = red.salidaFinal
-    print("Salida de la pasada hacia adelante: {}".format(salida))
-    print("Esperado: ",t[2],'\n' )
-
-    red.evaluarMuesta(i[3])
-    salida = red.salidaFinal
-    print("Salida de la pasada hacia adelante: {}".format(salida))
-    print("Esperado: ",t[3],'\n' )
-
-    red.graficarError()
+n = RedNeuralMNIST([784, 200, 10], 0.4)
+n.cuda()
+# load the mnist training data CSV file into a list
+training_data_file = open("mnist_train.csv", 'r')
+training_data_list = training_data_file.readlines()
+training_data_file.close()
+epochs = 3
+inputFinal = []
+plotError = []
+for e in range(epochs):
+    print("Epoch: {}".format(e))
+    # Recorrer el dataset
+    for record in training_data_list[:500]:
+        all_values = record.split(',')
+        inputs = (numpy.asfarray(all_values[1:]) / 255.0 * 0.99) + 0.01
+        # Creando valores de targets para los 10 nodos de salida, todos en 0.01 menos el deseado
+        targets = numpy.zeros(10) + 0.01
+        # Actualizando el target deseado
+        targets[int(all_values[0])] = 0.99
+        n.entrenar(inputs, targets)
+    plotError += [[e, n.perdida[0]]]
+    n.perdida = torch.Tensor([0.0])
+x = [i[0] for i in plotError]
+y = [i[1] for i in plotError]
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.plot(x, y, 'r')
+ax.set_title('Gráfica del Error Acumulador por Epoch')
+plt.show()
+# print("Accuracy: {}".format(n.calcular_accuracy()))
+print("Pesos capa oculta a capa salida {}".format(n.linear_ho.weight))
+print("Pesos capa entrada a capa oculta {}".format(n.linear_ih.weight))
